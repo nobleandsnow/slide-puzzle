@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>滑塊拼圖 (Sliding Puzzle) - 進階版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: {
+                            850: '#1e293b', 
+                        },
+                        indigo: {
+                            550: '#4f46e5',
+                        }
+                    },
+                    boxShadow: {
+                        'tile': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.4), 0 2px 2px 0 rgba(0, 0, 0, 0.1)',
+                        'tile-active': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.1)',
+                        'board': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), inset 0 2px 4px 0 rgba(0,0,0,0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            touch-action: none; 
+            overflow: hidden;
+            /* Modern Gradient Background */
+            background: radial-gradient(circle at 50% 0%, #f1f5f9 0%, #cbd5e1 100%);
+        }
+
+        /* Game Board Container */
+        #game-container {
+            width: 100%;
+            max-width: 380px; 
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
+            position: relative;
+            background-color: #e2e8f0; /* slate-200 - The Gap Color */
+            /* Frame style */
+            border: 8px solid #334155; /* slate-700 */
+            border-radius: 12px;
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.25);
+            touch-action: none;
+            transition: border-color 0.5s;
+            overflow: hidden; 
+        }
+
+        /* Full Image Overlay */
+        #full-image-overlay {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background-size: 100% 100%;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50; 
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #full-image-overlay.active {
+            opacity: 1;
+        }
+
+        /* Game Won State (Number Mode) */
+        #game-container.won-number-mode {
+            border-color: #10b981; /* Emerald-500 */
+            background-color: transparent;
+            box-shadow: 0 0 0 4px #10b981, 0 20px 25px -5px rgba(16, 185, 129, 0.2);
+        }
+
+        #game-container.won-number-mode .tile {
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            filter: none !important;
+            cursor: default;
+        }
+
+        /* Individual Tile */
+        .tile {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 1s ease, color 0.5s ease, text-shadow 0.5s ease;
+            
+            /* Physical Tile Look */
+            background-color: #f8fafc; 
+            color: #475569; 
+            border-radius: 6px; 
+            box-sizing: border-box;
+            width: 100%; 
+            height: 100%;
+            
+            /* REVERTED LOGIC: Use solid border matching background for clean gaps */
+            border: 2px solid #e2e8f0; 
+            
+            /* 3D feel */
+            box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.05);
+            
+            will-change: transform;
+        }
+
+        .tile:hover {
+            filter: brightness(0.98);
+            z-index: 10;
+        }
+        
+        .tile:active {
+            transform: scale(0.95);
+        }
+        
+        /* Image Mode Styles */
+        .tile.image-mode {
+            background-repeat: no-repeat;
+            color: transparent; 
+            text-shadow: none;
+            
+            /* REVERTED LOGIC: 
+               Use the same solid border as number mode.
+               This masks the edges cleanly with the background color (#e2e8f0),
+               eliminating the "bad cropping" look of semi-transparent borders. 
+            */
+            border: 2px solid #e2e8f0;
+            
+            background-color: #cbd5e1; 
+            box-shadow: none; 
+        }
+
+        .tile.image-mode.show-hint {
+            color: white; 
+            font-size: 1rem;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+
+        /* Controls Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+            touch-action: pan-y; 
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px; 
+            width: 16px;
+            border-radius: 50%;
+            background: #6366f1; /* Indigo-500 */
+            border: 2px solid white;
+            margin-top: -6px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+            transition: transform 0.1s;
+        }
+
+        input[type=range]:active::-webkit-slider-thumb {
+            transform: scale(1.2);
+        }
+        
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #cbd5e1;
+            border-radius: 99px;
+        }
+
+        /* Disabled Button State */
+        .btn-disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+            background-color: #f1f5f9 !important; /* slate-100 */
+            color: #cbd5e1 !important; /* slate-300 */
+            border-color: transparent !important;
+            box-shadow: none !important;
+        }
+
+        /* Active Toggle State */
+        .btn-active {
+            background-color: #6366f1 !important; /* Indigo-500 */
+            color: white !important;
+            border-color: #6366f1 !important;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1) !important;
+        }
+
+        /* Modal */
+        #win-modal {
+            transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* Animation Classes */
+        .tile.fade-in-tile {
+            animation: fadeIn 1.5s forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Font refinements */
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body class="h-[100dvh] flex flex-col items-center justify-center py-4 px-4 text-slate-700">
+
+    <div class="w-full max-w-sm flex-none space-y-4"> 
+        
+        <!-- Header -->
+        <header class="flex justify-between items-end px-2 select-none">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800 tracking-tight">滑塊拼圖</h1>
+                <p class="text-slate-500 text-[11px] font-medium tracking-wide mt-0.5">Sliding Puzzle</p>
+            </div>
+            <div class="text-right flex flex-col items-end">
+                <div class="text-xl font-mono font-bold text-indigo-600 leading-none mb-1" id="timer">00:00</div>
+                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-white/50 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                    步數 <span id="move-count" class="text-slate-600 ml-1">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Game Board -->
+        <div id="game-container">
+            <div id="full-image-overlay"></div>
+            <!-- Tiles generated by JS -->
+        </div>
+
+        <!-- Controls Card -->
+        <div class="bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/50 space-y-4">
+            
+            <!-- Grid Size -->
+            <div class="px-1">
+                <div class="flex justify-between mb-2 items-center">
+                    <label for="size-slider" class="font-bold text-xs text-slate-600 uppercase tracking-wide">難度設定</label>
+                    <span id="size-display" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">4 x 4</span>
+                </div>
+                <input type="range" id="size-slider" min="2" max="10" value="4" step="1">
+            </div>
+
+            <!-- Actions Grid -->
+            <div class="grid grid-cols-2 gap-2.5">
+                <!-- Row 1: Main Actions -->
+                <button id="restart-btn" class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-3 rounded-xl transition-all active:scale-95 text-xs shadow-md shadow-slate-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    重新開始
+                </button>
+                
+                <label class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 px-3 rounded-xl cursor-pointer transition-all active:scale-95 text-xs text-center shadow-md shadow-indigo-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>上傳圖片</span>
+                    <input type="file" id="image-upload" accept="image/*" class="hidden">
+                </label>
+
+                <!-- Row 2: Image Options -->
+                <button id="hint-btn" class="btn-disabled flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-500 font-bold py-2.5 px-3 rounded-xl transition-all active:scale-95 text-xs shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    顯示提示
+                </button>
+
+                <button id="remove-image-btn" class="btn-disabled flex items-center justify-center gap-2 bg-white border border-slate-200 text-rose-500 hover:text-rose-600 hover:bg-rose-50 font-bold py-2.5 px-3 rounded-xl transition-all active:scale-95 text-xs shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    移除圖片
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Win Modal -->
+    <div id="win-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-[2px] opacity-0 pointer-events-none">
+        <div class="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-1.5 w-auto min-w-[130px] text-center transform scale-90 translate-y-4 transition-all duration-300 border border-white/50 ring-1 ring-black/5">
+            <h3 class="text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-widest mt-1">Puzzle Solved</h3>
+            
+            <div class="flex items-center justify-center gap-2 mb-1.5 bg-slate-100/50 py-1 px-2 rounded-lg border border-slate-200/50">
+                <div class="flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="text-slate-400 text-[9px] font-bold uppercase">Moves</span>
+                    <span id="win-moves" class="font-mono font-bold text-slate-700 text-xs">0</span>
+                </div>
+                <div class="w-px h-2.5 bg-slate-300"></div>
+                <div class="flex items-center gap-1.5 whitespace-nowrap">
+                    <span class="text-slate-400 text-[9px] font-bold uppercase">Time</span>
+                    <span id="win-time" class="font-mono font-bold text-slate-700 text-xs">00:00</span>
+                </div>
+            </div>
+
+            <button onclick="initGame()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-1.5 rounded-lg text-[10px] transition active:scale-95 shadow-sm">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <canvas id="crop-canvas" style="display: none;"></canvas>
+
+    <script>
+        // State Management
+        const state = {
+            size: 4,
+            grid: [], 
+            tiles: {}, 
+            emptyPos: 15,
+            moves: 0,
+            timerInterval: null,
+            startTime: null,
+            isPlaying: false,
+            hasStarted: false, 
+            imageSrc: null,
+            showHint: false
+        };
+
+        // DOM Elements
+        const containerEl = document.getElementById('game-container');
+        const overlayEl = document.getElementById('full-image-overlay');
+        const sliderEl = document.getElementById('size-slider');
+        const sizeDisplayEl = document.getElementById('size-display');
+        const moveCountEl = document.getElementById('move-count');
+        const timerEl = document.getElementById('timer');
+        const winModal = document.getElementById('win-modal');
+        const hintBtn = document.getElementById('hint-btn');
+        const removeImageBtn = document.getElementById('remove-image-btn');
+
+        // --- Core Logic ---
+
+        function initGame() {
+            stopTimer();
+            state.moves = 0;
+            state.isPlaying = true;
+            state.hasStarted = false; 
+            state.tiles = {};
+            updateStats();
+            hideWinModal();
+
+            if (state.imageSrc) {
+                state.showHint = true;
+            }
+
+            updateButtonStates(); 
+            timerEl.textContent = "00:00"; 
+            
+            // Clean up won states
+            containerEl.classList.remove('won-number-mode');
+            overlayEl.classList.remove('active');
+            overlayEl.style.backgroundImage = 'none';
+
+            const totalTiles = state.size * state.size;
+            state.emptyPos = totalTiles - 1;
+            state.grid = new Array(totalTiles).fill(null);
+
+            // Clear container but keep overlay
+            const oldTiles = containerEl.querySelectorAll('.tile');
+            oldTiles.forEach(el => el.remove());
+            
+            // Create Tiles
+            for (let i = 0; i < totalTiles - 1; i++) {
+                createTile(i + 1, i, i);
+            }
+            
+            state.grid[totalTiles - 1] = null; // The empty slot
+
+            // Initial Positioning
+            repositionAllTiles();
+
+            // Shuffle
+            shuffleBoard();
+        }
+
+        function createTile(tileId, currentPos, originalPos) {
+             const tileEl = document.createElement('div');
+                tileEl.className = 'tile';
+                
+                // Adaptive Font Size
+                const fontSize = Math.max(0.8, 3.5 - (state.size * 0.25)); 
+                tileEl.style.fontSize = `${fontSize}rem`;
+                
+                // Store metadata
+                state.tiles[tileId] = {
+                    id: tileId,
+                    element: tileEl,
+                    originalPos: originalPos, // 0-based index of where it BELONGS
+                    currentPos: currentPos   // 0-based index of where it IS
+                };
+                state.grid[currentPos] = tileId;
+
+                // Setup Appearance
+                updateTileVisual(tileId);
+
+                // Event Listener
+                tileEl.addEventListener('pointerdown', (e) => {
+                    if (e.button !== 0) return; 
+                    e.preventDefault(); 
+                    handleTileInteraction(state.tiles[tileId].currentPos);
+                });
+
+                containerEl.appendChild(tileEl);
+                return tileEl;
+        }
+
+        // Logic to move multiple tiles
+        function handleTileInteraction(clickedIndex) {
+            if (!state.isPlaying) return;
+
+            const size = state.size;
+            const emptyRow = Math.floor(state.emptyPos / size);
+            const emptyCol = state.emptyPos % size;
+            const clickRow = Math.floor(clickedIndex / size);
+            const clickCol = clickedIndex % size;
+
+            // Check if in same row or column
+            if (emptyRow !== clickRow && emptyCol !== clickCol) return;
+
+            // Updated: Start timer ONLY AFTER validating the move
+            if (!state.hasStarted) {
+                state.hasStarted = true;
+                state.startTime = Date.now();
+                startTimer();
+            }
+
+            let step = 0;
+            let count = 0;
+
+            if (emptyRow === clickRow) {
+                step = (state.emptyPos > clickedIndex) ? -1 : 1; 
+                count = Math.abs(state.emptyPos - clickedIndex);
+            } else {
+                step = (state.emptyPos > clickedIndex) ? -size : size;
+                count = Math.abs((state.emptyPos - clickedIndex) / size);
+            }
+
+            let currentHole = state.emptyPos;
+            
+            for (let i = 0; i < count; i++) {
+                const neighborIndex = currentHole + step;
+                const tileId = state.grid[neighborIndex];
+                
+                state.grid[currentHole] = tileId;
+                state.grid[neighborIndex] = null;
+                
+                if (tileId) {
+                    state.tiles[tileId].currentPos = currentHole;
+                }
+                
+                currentHole = neighborIndex;
+                state.moves++;
+            }
+
+            state.emptyPos = clickedIndex;
+            updateStats();
+            repositionAllTiles();
+            checkWin();
+        }
+
+        function repositionAllTiles() {
+            const size = state.size;
+            const percentage = 100 / size;
+
+            for (let tileId in state.tiles) {
+                const tile = state.tiles[tileId];
+                const row = Math.floor(tile.currentPos / size);
+                const col = tile.currentPos % size;
+                
+                tile.element.style.width = `${percentage}%`;
+                tile.element.style.height = `${percentage}%`;
+                
+                const x = col * 100;
+                const y = row * 100;
+                
+                tile.element.style.transform = `translate(${x}%, ${y}%)`;
+            }
+        }
+
+        function updateTileVisual(tileId) {
+            const tile = state.tiles[tileId];
+            const el = tile.element;
+            
+            el.className = 'tile'; 
+            
+            if (state.imageSrc) {
+                el.classList.add('image-mode');
+                if (state.showHint) el.classList.add('show-hint');
+                el.textContent = tileId; 
+
+                const size = state.size;
+                const origRow = Math.floor(tile.originalPos / size);
+                const origCol = tile.originalPos % size;
+                
+                el.style.backgroundSize = `${size * 100.5}%`;
+                
+                const xPos = (origCol / (size - 1)) * 100;
+                const yPos = (origRow / (size - 1)) * 100;
+                
+                el.style.backgroundImage = `url(${state.imageSrc})`;
+                el.style.backgroundPosition = `${xPos}% ${yPos}%`;
+            } else {
+                el.textContent = tileId;
+            }
+        }
+
+        // --- Image Cropping Logic ---
+        function processImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.getElementById('crop-canvas');
+                    const ctx = canvas.getContext('2d');
+                    const size = Math.min(img.width, img.height);
+                    const maxRes = 1000;
+                    const scale = Math.min(1, maxRes / size);
+                    const finalSize = Math.floor(size * scale);
+                    
+                    canvas.width = finalSize;
+                    canvas.height = finalSize;
+                    
+                    ctx.fillStyle = "#000000";
+                    ctx.fillRect(0, 0, finalSize, finalSize);
+
+                    const sx = Math.floor((img.width - size) / 2);
+                    const sy = Math.floor((img.height - size) / 2);
+                    
+                    ctx.drawImage(img, sx, sy, size, size, 0, 0, finalSize, finalSize);
+                    
+                    state.imageSrc = canvas.toDataURL('image/png');
+                    
+                    state.showHint = true;
+                    initGame();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // --- Shuffle (Solvable) ---
+        function shuffleBoard() {
+            const tiles = document.querySelectorAll('.tile');
+            tiles.forEach(t => t.style.transition = 'none');
+            
+            const totalMoves = state.size * state.size * 50; 
+            let lastPos = -1;
+            
+            for (let i = 0; i < totalMoves; i++) {
+                const neighbors = getNeighbors(state.emptyPos);
+                const candidates = neighbors.filter(n => n !== lastPos);
+                const target = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : neighbors[0];
+                
+                const tileId = state.grid[target];
+                state.grid[state.emptyPos] = tileId;
+                state.grid[target] = null;
+                state.tiles[tileId].currentPos = state.emptyPos;
+                
+                lastPos = state.emptyPos;
+                state.emptyPos = target;
+            }
+            
+            repositionAllTiles();
+            
+            setTimeout(() => {
+                tiles.forEach(t => t.style.transition = 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 1s ease, color 0.5s ease, text-shadow 0.5s ease');
+            }, 50);
+        }
+
+        function getNeighbors(pos) {
+            const s = state.size;
+            const r = Math.floor(pos / s);
+            const c = pos % s;
+            const res = [];
+            if (r > 0) res.push(pos - s); 
+            if (r < s - 1) res.push(pos + s); 
+            if (c > 0) res.push(pos - 1); 
+            if (c < s - 1) res.push(pos + 1); 
+            return res;
+        }
+
+        // --- Win Check ---
+        function checkWin() {
+            const total = state.size * state.size;
+            let win = true;
+            for (let i = 0; i < total - 1; i++) {
+                if (state.grid[i] !== i + 1) {
+                    win = false;
+                    break;
+                }
+            }
+            
+            if (win) {
+                state.isPlaying = false;
+                stopTimer();
+                
+                if (state.imageSrc) {
+                    // METHOD 1: Image Mode
+                    state.showHint = false;
+                    updateButtonStates();
+                    for(let id in state.tiles) { updateTileVisual(id); }
+                    overlayEl.style.backgroundImage = `url(${state.imageSrc})`;
+                    overlayEl.classList.add('active');
+
+                } else {
+                    // METHOD 2: Number Mode
+                    containerEl.classList.add('won-number-mode');
+                    const missingId = total;
+                    const lastPos = total - 1;
+                    const tileEl = document.createElement('div');
+                    tileEl.className = 'tile fade-in-tile';
+                    const size = state.size;
+                    const percentage = 100 / size;
+                    tileEl.style.width = `${percentage}%`;
+                    tileEl.style.height = `${percentage}%`;
+                    const x = (lastPos % size) * 100;
+                    const y = Math.floor(lastPos / size) * 100;
+                    tileEl.style.transform = `translate(${x}%, ${y}%)`;
+                    tileEl.textContent = missingId;
+                    const fontSize = Math.max(0.8, 3.5 - (state.size * 0.25)); 
+                    tileEl.style.fontSize = `${fontSize}rem`;
+                    containerEl.appendChild(tileEl);
+                }
+
+                setTimeout(showWinModal, 800); 
+            }
+        }
+
+        function showWinModal() {
+            document.getElementById('win-moves').textContent = state.moves;
+            document.getElementById('win-time').textContent = timerEl.textContent;
+            
+            winModal.classList.remove('pointer-events-none', 'opacity-0');
+            winModal.querySelector('div').classList.remove('scale-90', 'translate-y-4');
+            winModal.querySelector('div').classList.add('scale-100', 'translate-y-0');
+        }
+
+        function hideWinModal() {
+            winModal.classList.add('pointer-events-none', 'opacity-0');
+            winModal.querySelector('div').classList.add('scale-90', 'translate-y-4');
+            winModal.querySelector('div').classList.remove('scale-100', 'translate-y-0');
+        }
+
+        // --- Utilities ---
+        function updateStats() {
+            moveCountEl.textContent = state.moves;
+        }
+
+        function startTimer() {
+            stopTimer();
+            state.timerInterval = setInterval(() => {
+                const s = Math.floor((Date.now() - state.startTime) / 1000);
+                const m = Math.floor(s / 60).toString().padStart(2, '0');
+                const sec = (s % 60).toString().padStart(2, '0');
+                timerEl.textContent = `${m}:${sec}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (state.timerInterval) clearInterval(state.timerInterval);
+        }
+
+        function updateButtonStates() {
+            if (state.imageSrc) {
+                hintBtn.classList.remove('btn-disabled');
+                removeImageBtn.classList.remove('btn-disabled');
+                
+                if (state.showHint) {
+                    hintBtn.classList.add('btn-active');
+                    hintBtn.classList.remove('bg-white', 'text-slate-500');
+                    hintBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                        隱藏提示`;
+                } else {
+                    hintBtn.classList.remove('btn-active');
+                    hintBtn.classList.add('bg-white', 'text-slate-500');
+                    hintBtn.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        顯示提示`;
+                }
+
+            } else {
+                hintBtn.classList.add('btn-disabled');
+                removeImageBtn.classList.add('btn-disabled');
+                hintBtn.classList.remove('btn-active', 'bg-white', 'text-slate-500'); 
+                hintBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    顯示提示`;
+            }
+        }
+
+        sliderEl.addEventListener('input', (e) => {
+            state.size = parseInt(e.target.value);
+            sizeDisplayEl.textContent = `${state.size} x ${state.size}`;
+            initGame();
+        });
+
+        document.getElementById('restart-btn').addEventListener('click', initGame);
+
+        document.getElementById('image-upload').addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                processImage(e.target.files[0]);
+                e.target.value = ''; // Reset
+            }
+        });
+
+        removeImageBtn.addEventListener('click', () => {
+            if (!state.imageSrc) return;
+            state.imageSrc = null;
+            state.showHint = false;
+            initGame();
+        });
+
+        hintBtn.addEventListener('click', () => {
+            if (!state.imageSrc) return;
+            state.showHint = !state.showHint;
+            updateButtonStates();
+            for (let id in state.tiles) { updateTileVisual(id); }
+        });
+
+        initGame();
+
+    </script>
+</body>
+</html>

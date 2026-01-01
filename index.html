@@ -3,19 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>滑塊拼圖 (Sliding Puzzle) - 進階版</title>
+    <title>滑塊拼圖 (Sliding Puzzle) - AI 終極版 (Max 10x10)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        slate: {
-                            850: '#1e293b', 
-                        },
-                        indigo: {
-                            550: '#4f46e5',
-                        }
+                        slate: { 850: '#1e293b' },
+                        indigo: { 550: '#4f46e5' }
                     },
                     boxShadow: {
                         'tile': 'inset 0 1px 0 0 rgba(255, 255, 255, 0.4), 0 2px 2px 0 rgba(0, 0, 0, 0.1)',
@@ -33,20 +29,17 @@
             font-family: 'Noto Sans TC', sans-serif;
             touch-action: none; 
             overflow: hidden;
-            /* Modern Gradient Background */
             background: radial-gradient(circle at 50% 0%, #f1f5f9 0%, #cbd5e1 100%);
         }
 
-        /* Game Board Container */
         #game-container {
             width: 100%;
             max-width: 380px; 
             aspect-ratio: 1 / 1;
             margin: 0 auto;
             position: relative;
-            background-color: #e2e8f0; /* slate-200 - The Gap Color */
-            /* Frame style */
-            border: 8px solid #334155; /* slate-700 */
+            background-color: #e2e8f0; 
+            border: 8px solid #334155; 
             border-radius: 12px;
             box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.25);
             touch-action: none;
@@ -54,7 +47,6 @@
             overflow: hidden; 
         }
 
-        /* Full Image Overlay */
         #full-image-overlay {
             position: absolute;
             inset: 0;
@@ -73,9 +65,8 @@
             opacity: 1;
         }
 
-        /* Game Won State (Number Mode) */
         #game-container.won-number-mode {
-            border-color: #10b981; /* Emerald-500 */
+            border-color: #10b981; 
             background-color: transparent;
             box-shadow: 0 0 0 4px #10b981, 0 20px 25px -5px rgba(16, 185, 129, 0.2);
         }
@@ -88,7 +79,6 @@
             cursor: default;
         }
 
-        /* Individual Tile */
         .tile {
             position: absolute;
             display: flex;
@@ -98,21 +88,14 @@
             cursor: pointer;
             user-select: none;
             transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 1s ease, color 0.5s ease, text-shadow 0.5s ease;
-            
-            /* Physical Tile Look */
             background-color: #f8fafc; 
             color: #475569; 
             border-radius: 6px; 
             box-sizing: border-box;
             width: 100%; 
             height: 100%;
-            
-            /* REVERTED LOGIC: Use solid border matching background for clean gaps */
             border: 2px solid #e2e8f0; 
-            
-            /* 3D feel */
             box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.8), 0 1px 2px rgba(0,0,0,0.05);
-            
             will-change: transform;
         }
 
@@ -125,19 +108,11 @@
             transform: scale(0.95);
         }
         
-        /* Image Mode Styles */
         .tile.image-mode {
             background-repeat: no-repeat;
             color: transparent; 
             text-shadow: none;
-            
-            /* REVERTED LOGIC: 
-               Use the same solid border as number mode.
-               This masks the edges cleanly with the background color (#e2e8f0),
-               eliminating the "bad cropping" look of semi-transparent borders. 
-            */
             border: 2px solid #e2e8f0;
-            
             background-color: #cbd5e1; 
             box-shadow: none; 
         }
@@ -149,12 +124,12 @@
             z-index: 10;
         }
 
-        /* Controls Slider */
         input[type=range] {
             -webkit-appearance: none;
             width: 100%;
             background: transparent;
             touch-action: pan-y; 
+            transition: opacity 0.2s;
         }
         
         input[type=range]::-webkit-slider-thumb {
@@ -162,16 +137,27 @@
             height: 16px; 
             width: 16px;
             border-radius: 50%;
-            background: #6366f1; /* Indigo-500 */
+            background: #6366f1; 
             border: 2px solid white;
             margin-top: -6px;
             cursor: pointer;
             box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
-            transition: transform 0.1s;
+            transition: transform 0.1s, background-color 0.2s;
         }
 
         input[type=range]:active::-webkit-slider-thumb {
             transform: scale(1.2);
+        }
+
+        input[type=range]:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        input[type=range]:disabled::-webkit-slider-thumb {
+            background: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
         }
         
         input[type=range]::-webkit-slider-runnable-track {
@@ -182,31 +168,27 @@
             border-radius: 99px;
         }
 
-        /* Disabled Button State */
         .btn-disabled {
             opacity: 0.6;
             cursor: not-allowed;
             pointer-events: none;
-            background-color: #f1f5f9 !important; /* slate-100 */
-            color: #cbd5e1 !important; /* slate-300 */
+            background-color: #f1f5f9 !important; 
+            color: #cbd5e1 !important; 
             border-color: transparent !important;
             box-shadow: none !important;
         }
 
-        /* Active Toggle State */
         .btn-active {
-            background-color: #6366f1 !important; /* Indigo-500 */
+            background-color: #6366f1 !important; 
             color: white !important;
             border-color: #6366f1 !important;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.1) !important;
         }
 
-        /* Modal */
         #win-modal {
             transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
-        /* Animation Classes */
         .tile.fade-in-tile {
             animation: fadeIn 1.5s forwards;
             opacity: 0;
@@ -217,7 +199,6 @@
             to { opacity: 1; }
         }
         
-        /* Font refinements */
         .font-mono {
             font-family: 'JetBrains Mono', monospace;
         }
@@ -251,9 +232,10 @@
         <div class="bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-lg border border-white/50 space-y-4">
             
             <!-- Grid Size -->
-            <div class="px-1">
+            <div class="px-1 transition-opacity duration-300" id="slider-container">
                 <div class="flex justify-between mb-2 items-center">
-                    <label for="size-slider" class="font-bold text-xs text-slate-600 uppercase tracking-wide">難度設定</label>
+                    <!-- Truly hidden button, no cursor-help or title -->
+                    <label id="ai-trigger" class="font-bold text-xs text-slate-600 uppercase tracking-wide select-none">難度設定</label>
                     <span id="size-display" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">4 x 4</span>
                 </div>
                 <input type="range" id="size-slider" min="2" max="10" value="4" step="1">
@@ -298,28 +280,31 @@
 
     <!-- Win Modal -->
     <div id="win-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-[2px] opacity-0 pointer-events-none">
-        <div class="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl p-1.5 w-auto min-w-[130px] text-center transform scale-90 translate-y-4 transition-all duration-300 border border-white/50 ring-1 ring-black/5">
-            <h3 class="text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-widest mt-1">Puzzle Solved</h3>
+        <div class="bg-white/95 backdrop-blur rounded-lg shadow-2xl p-1.5 w-auto min-w-[130px] text-center transform scale-95 transition-transform duration-300 border border-slate-200">
+            <h3 class="text-xs font-bold text-slate-800 mb-1">🎉 完成！</h3>
             
-            <div class="flex items-center justify-center gap-2 mb-1.5 bg-slate-100/50 py-1 px-2 rounded-lg border border-slate-200/50">
-                <div class="flex items-center gap-1.5 whitespace-nowrap">
-                    <span class="text-slate-400 text-[9px] font-bold uppercase">Moves</span>
+            <div class="flex items-center justify-center gap-1.5 mb-1 bg-slate-50 py-0.5 px-1.5 rounded border border-slate-100">
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                    <span class="text-slate-400 text-[10px]">步數</span>
                     <span id="win-moves" class="font-mono font-bold text-slate-700 text-xs">0</span>
                 </div>
-                <div class="w-px h-2.5 bg-slate-300"></div>
-                <div class="flex items-center gap-1.5 whitespace-nowrap">
-                    <span class="text-slate-400 text-[9px] font-bold uppercase">Time</span>
+                <div class="w-px h-2.5 bg-slate-200"></div>
+                <div class="flex items-center gap-1 whitespace-nowrap">
+                    <span class="text-slate-400 text-[10px]">時間</span>
                     <span id="win-time" class="font-mono font-bold text-slate-700 text-xs">00:00</span>
                 </div>
             </div>
 
-            <button onclick="initGame()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-1.5 rounded-lg text-[10px] transition active:scale-95 shadow-sm">
-                Play Again
+            <button onclick="initGame()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-1 rounded text-[10px] transition active:scale-95 shadow-sm">
+                再玩一次
             </button>
         </div>
     </div>
 
     <canvas id="crop-canvas" style="display: none;"></canvas>
+
+    <!-- Hidden AI Button for functionality reference (needed for logic), not visible -->
+    <button id="ai-solve-btn" style="display:none;"></button>
 
     <script>
         // State Management
@@ -334,7 +319,8 @@
             isPlaying: false,
             hasStarted: false, 
             imageSrc: null,
-            showHint: false
+            showHint: false,
+            isAiSolving: false 
         };
 
         // DOM Elements
@@ -347,6 +333,60 @@
         const winModal = document.getElementById('win-modal');
         const hintBtn = document.getElementById('hint-btn');
         const removeImageBtn = document.getElementById('remove-image-btn');
+        const aiTrigger = document.getElementById('ai-trigger'); 
+        const aiSolveBtn = document.getElementById('ai-solve-btn'); 
+
+        // --- Optimized Priority Queue (Min Heap) ---
+        class MinHeap {
+            constructor() { this.heap = []; }
+            push(node) {
+                this.heap.push(node);
+                this.bubbleUp(this.heap.length - 1);
+            }
+            pop() {
+                if (this.heap.length === 0) return null;
+                const min = this.heap[0];
+                const end = this.heap.pop();
+                if (this.heap.length > 0) {
+                    this.heap[0] = end;
+                    this.sinkDown(0);
+                }
+                return min;
+            }
+            size() { return this.heap.length; }
+            bubbleUp(n) {
+                const element = this.heap[n];
+                while (n > 0) {
+                    let parentN = Math.floor((n + 1) / 2) - 1;
+                    let parent = this.heap[parentN];
+                    if (element.f >= parent.f) break;
+                    this.heap[parentN] = element;
+                    this.heap[n] = parent;
+                    n = parentN;
+                }
+            }
+            sinkDown(n) {
+                const length = this.heap.length;
+                const element = this.heap[n];
+                while (true) {
+                    let child2N = (n + 1) * 2;
+                    let child1N = child2N - 1;
+                    let swap = null;
+                    if (child1N < length) {
+                        let child1 = this.heap[child1N];
+                        if (child1.f < element.f) swap = child1N;
+                    }
+                    if (child2N < length) {
+                        let child2 = this.heap[child2N];
+                        if ((swap === null ? child2.f < element.f : child2.f < this.heap[child1N].f)) swap = child2N;
+                    }
+                    if (swap === null) break;
+                    this.heap[n] = this.heap[swap];
+                    this.heap[swap] = element;
+                    n = swap;
+                }
+            }
+        }
 
         // --- Core Logic ---
 
@@ -355,6 +395,7 @@
             state.moves = 0;
             state.isPlaying = true;
             state.hasStarted = false; 
+            state.isAiSolving = false;
             state.tiles = {};
             updateStats();
             hideWinModal();
@@ -366,30 +407,28 @@
             updateButtonStates(); 
             timerEl.textContent = "00:00"; 
             
-            // Clean up won states
             containerEl.classList.remove('won-number-mode');
             overlayEl.classList.remove('active');
             overlayEl.style.backgroundImage = 'none';
+
+            // Reset Slider State just in case
+            sliderEl.disabled = false;
+            sliderEl.parentElement.classList.remove('opacity-50', 'pointer-events-none');
 
             const totalTiles = state.size * state.size;
             state.emptyPos = totalTiles - 1;
             state.grid = new Array(totalTiles).fill(null);
 
-            // Clear container but keep overlay
             const oldTiles = containerEl.querySelectorAll('.tile');
             oldTiles.forEach(el => el.remove());
             
-            // Create Tiles
             for (let i = 0; i < totalTiles - 1; i++) {
                 createTile(i + 1, i, i);
             }
             
-            state.grid[totalTiles - 1] = null; // The empty slot
+            state.grid[totalTiles - 1] = null; 
 
-            // Initial Positioning
             repositionAllTiles();
-
-            // Shuffle
             shuffleBoard();
         }
 
@@ -397,34 +436,31 @@
              const tileEl = document.createElement('div');
                 tileEl.className = 'tile';
                 
-                // Adaptive Font Size
                 const fontSize = Math.max(0.8, 3.5 - (state.size * 0.25)); 
                 tileEl.style.fontSize = `${fontSize}rem`;
                 
-                // Store metadata
                 state.tiles[tileId] = {
                     id: tileId,
                     element: tileEl,
-                    originalPos: originalPos, // 0-based index of where it BELONGS
-                    currentPos: currentPos   // 0-based index of where it IS
+                    originalPos: originalPos, 
+                    currentPos: currentPos    
                 };
                 state.grid[currentPos] = tileId;
 
-                // Setup Appearance
                 updateTileVisual(tileId);
 
-                // Event Listener
                 tileEl.addEventListener('pointerdown', (e) => {
                     if (e.button !== 0) return; 
                     e.preventDefault(); 
-                    handleTileInteraction(state.tiles[tileId].currentPos);
+                    if (!state.isAiSolving) {
+                        handleTileInteraction(state.tiles[tileId].currentPos);
+                    }
                 });
 
                 containerEl.appendChild(tileEl);
                 return tileEl;
         }
 
-        // Logic to move multiple tiles
         function handleTileInteraction(clickedIndex) {
             if (!state.isPlaying) return;
 
@@ -434,10 +470,8 @@
             const clickRow = Math.floor(clickedIndex / size);
             const clickCol = clickedIndex % size;
 
-            // Check if in same row or column
             if (emptyRow !== clickRow && emptyCol !== clickCol) return;
 
-            // Updated: Start timer ONLY AFTER validating the move
             if (!state.hasStarted) {
                 state.hasStarted = true;
                 state.startTime = Date.now();
@@ -524,7 +558,6 @@
             }
         }
 
-        // --- Image Cropping Logic ---
         function processImage(file) {
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -558,7 +591,6 @@
             reader.readAsDataURL(file);
         }
 
-        // --- Shuffle (Solvable) ---
         function shuffleBoard() {
             const tiles = document.querySelectorAll('.tile');
             tiles.forEach(t => t.style.transition = 'none');
@@ -599,7 +631,6 @@
             return res;
         }
 
-        // --- Win Check ---
         function checkWin() {
             const total = state.size * state.size;
             let win = true;
@@ -612,18 +643,17 @@
             
             if (win) {
                 state.isPlaying = false;
+                state.isAiSolving = false; 
                 stopTimer();
+                document.body.style.cursor = 'default';
                 
                 if (state.imageSrc) {
-                    // METHOD 1: Image Mode
                     state.showHint = false;
                     updateButtonStates();
                     for(let id in state.tiles) { updateTileVisual(id); }
                     overlayEl.style.backgroundImage = `url(${state.imageSrc})`;
                     overlayEl.classList.add('active');
-
                 } else {
-                    // METHOD 2: Number Mode
                     containerEl.classList.add('won-number-mode');
                     const missingId = total;
                     const lastPos = total - 1;
@@ -649,7 +679,6 @@
         function showWinModal() {
             document.getElementById('win-moves').textContent = state.moves;
             document.getElementById('win-time').textContent = timerEl.textContent;
-            
             winModal.classList.remove('pointer-events-none', 'opacity-0');
             winModal.querySelector('div').classList.remove('scale-90', 'translate-y-4');
             winModal.querySelector('div').classList.add('scale-100', 'translate-y-0');
@@ -661,7 +690,6 @@
             winModal.querySelector('div').classList.remove('scale-100', 'translate-y-0');
         }
 
-        // --- Utilities ---
         function updateStats() {
             moveCountEl.textContent = state.moves;
         }
@@ -688,35 +716,532 @@
                 if (state.showHint) {
                     hintBtn.classList.add('btn-active');
                     hintBtn.classList.remove('bg-white', 'text-slate-500');
-                    hintBtn.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                        </svg>
-                        隱藏提示`;
+                    hintBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>隱藏提示`;
                 } else {
                     hintBtn.classList.remove('btn-active');
                     hintBtn.classList.add('bg-white', 'text-slate-500');
-                    hintBtn.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        顯示提示`;
+                    hintBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>顯示提示`;
                 }
-
             } else {
                 hintBtn.classList.add('btn-disabled');
                 removeImageBtn.classList.add('btn-disabled');
                 hintBtn.classList.remove('btn-active', 'bg-white', 'text-slate-500'); 
-                hintBtn.innerHTML = `
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                    顯示提示`;
+                hintBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>顯示提示`;
             }
         }
 
+        // --- AI SOLVER LOGIC ---
+        
+        async function solveGame() {
+            if (!state.isPlaying || state.isAiSolving) return;
+            
+            if (state.size > 10) {
+                alert("目前 AI 解題僅支援到 10x10。");
+                return;
+            }
+
+            state.isAiSolving = true;
+            document.body.style.cursor = 'wait'; 
+            
+            // Disable Slider
+            sliderEl.disabled = true;
+            sliderEl.parentElement.classList.add('opacity-50', 'pointer-events-none');
+
+            await new Promise(r => setTimeout(r, 50));
+
+            let moves = [];
+            try {
+                if (state.size <= 4) {
+                    moves = findSolutionGlobal(state.grid, state.size, state.emptyPos, new Set());
+                } else if (state.size >= 8) {
+                    // "Peeling" logic for 8x8, 9x9, 10x10
+                    // Solving layers: Top Row -> Left Column -> Top Row -> Left Column ...
+                    moves = findSolutionPeeling(state.grid, state.size, state.emptyPos);
+                } else {
+                    // Standard Stratified Strategy for others (5x5, 6x6, 7x7)
+                    moves = findSolutionStratified(state.grid, state.size, state.emptyPos);
+                }
+            } catch (e) {
+                console.error(e);
+                moves = null;
+            }
+            
+            // Note: cursor and slider state will be reset in animateSolution or error block below
+
+            if (moves) {
+                animateSolution(moves);
+            } else {
+                alert("AI 運算失敗 (可能陷入死胡同，請手動移動幾步後重試)");
+                state.isAiSolving = false;
+                document.body.style.cursor = 'default';
+                sliderEl.disabled = false;
+                sliderEl.parentElement.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        // --- New "Peeling" Strategy (Layer by Layer) for 8x8, 9x9, 10x10 ---
+        // Solves Row 0 -> Col 0 -> Row 1 -> Col 1 ...
+        function findSolutionPeeling(grid, size, emptyIdx) {
+            let currentGrid = [...grid];
+            let currentEmpty = emptyIdx;
+            let fullPath = [];
+            let fixedIndices = new Set(); 
+
+            const applyMoves = (moves) => {
+                for (let moveIdx of moves) {
+                    [currentGrid[currentEmpty], currentGrid[moveIdx]] = [currentGrid[moveIdx], currentGrid[currentEmpty]];
+                    currentEmpty = moveIdx;
+                    fullPath.push(moveIdx);
+                }
+            };
+
+            // Peel until 2x2 remains
+            for (let layer = 0; layer < size - 2; layer++) {
+                // 1. Solve Top Row of this layer (from layer to size-1)
+                // e.g. layer 0: solve Row 0, cols 0..size-1
+                const rowMoves = solveRowRange(currentGrid, size, currentEmpty, layer, layer, fixedIndices);
+                if (!rowMoves) return null;
+                applyMoves(rowMoves);
+                
+                // Freeze this row segment
+                for (let c = layer; c < size; c++) fixedIndices.add(layer * size + c);
+
+                // 2. Solve Left Col of this layer (from layer+1 to size-1)
+                // e.g. layer 0: solve Col 0, rows 1..size-1
+                const colMoves = solveColRange(currentGrid, size, currentEmpty, layer, layer + 1, fixedIndices);
+                if (!colMoves) return null;
+                applyMoves(colMoves);
+
+                // Freeze this col segment
+                for (let r = layer + 1; r < size; r++) fixedIndices.add(r * size + layer);
+            }
+
+            // Phase 3: Solve the remaining 2x2 area using Global A*
+            const finalMoves = findSolutionGlobal(currentGrid, size, currentEmpty, fixedIndices);
+            if (!finalMoves) return null;
+            
+            fullPath.push(...finalMoves);
+            return fullPath;
+        }
+
+        // Generalized Row Solver (supports start col offset)
+        function solveRowRange(grid, size, emptyIdx, rowIdx, startCol, fixedIndices) {
+            let path = [];
+            let currentGrid = [...grid];
+            let currentEmpty = emptyIdx;
+
+            // Solve tiles one by one up to the 3rd last tile
+            for (let c = startCol; c < size - 2; c++) {
+                const targetVal = rowIdx * size + c + 1;
+                const targetPos = rowIdx * size + c;
+                
+                const moves = solveSubGoal(currentGrid, size, currentEmpty, [{val: targetVal, pos: targetPos}], fixedIndices);
+                if (!moves) return null;
+                
+                for (let m of moves) {
+                    [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                    currentEmpty = m;
+                    path.push(m);
+                }
+                fixedIndices.add(targetPos);
+            }
+
+            // Handle the last two tiles in this row (Rotate In)
+            const posA = rowIdx * size + (size - 2); 
+            const posB = rowIdx * size + (size - 1); 
+            const valA = posA + 1; 
+            const valB = posB + 1; 
+            const posBelowA = (rowIdx + 1) * size + (size - 2); // Position below A to rotate
+
+            // Step 2a: Move Tile B to posA
+            let moves = solveSubGoal(currentGrid, size, currentEmpty, [{val: valB, pos: posA}], fixedIndices);
+            if (!moves) return null;
+            for (let m of moves) {
+                path.push(m);
+                [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                currentEmpty = m;
+            }
+            fixedIndices.add(posA);
+
+            // Step 2b: Move Tile A to posBelowA
+            moves = solveSubGoal(currentGrid, size, currentEmpty, [{val: valA, pos: posBelowA}], fixedIndices);
+            if (!moves) return null;
+            for (let m of moves) {
+                path.push(m);
+                [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                currentEmpty = m;
+            }
+            fixedIndices.delete(posA);
+            
+            // Step 2c: Rotate in
+            moves = solveSubGoal(currentGrid, size, currentEmpty, [
+                {val: valA, pos: posA},
+                {val: valB, pos: posB}
+            ], fixedIndices);
+            
+            if (!moves) return null;
+            for (let m of moves) {
+                path.push(m);
+                [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                currentEmpty = m;
+            }
+
+            return path;
+        }
+
+        // Generalized Column Solver (supports start row offset)
+        function solveColRange(grid, size, emptyIdx, colIdx, startRow, fixedIndices) {
+            let path = [];
+            let currentGrid = [...grid];
+            let currentEmpty = emptyIdx;
+
+            // Solve tiles one by one up to the 3rd last tile vertically
+            for (let r = startRow; r < size - 2; r++) {
+                const targetVal = r * size + colIdx + 1;
+                const targetPos = r * size + colIdx;
+                
+                const moves = solveSubGoal(currentGrid, size, currentEmpty, [{val: targetVal, pos: targetPos}], fixedIndices);
+                if (!moves) return null;
+                
+                for (let m of moves) {
+                    [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                    currentEmpty = m;
+                    path.push(m);
+                }
+                fixedIndices.add(targetPos);
+            }
+
+            // Handle the last two tiles in this column (Rotate In - Vertical Version)
+            const posUp = (size - 2) * size + colIdx;
+            const posDown = (size - 1) * size + colIdx;
+            const valUp = posUp + 1;
+            const valDown = posDown + 1;
+            const posRightOfUp = (size - 2) * size + colIdx + 1; // Position to the right of Up to rotate
+
+            // Step 2a: Move Tile 'Down' (valDown) to 'posUp'
+            let moves = solveSubGoal(currentGrid, size, currentEmpty, [{val: valDown, pos: posUp}], fixedIndices);
+            if (!moves) return null;
+            for (let m of moves) {
+                path.push(m);
+                [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                currentEmpty = m;
+            }
+            fixedIndices.add(posUp);
+
+            // Step 2b: Move Tile 'Up' (valUp) to 'posRightOfUp'
+            moves = solveSubGoal(currentGrid, size, currentEmpty, [{val: valUp, pos: posRightOfUp}], fixedIndices);
+            if (!moves) return null;
+            for (let m of moves) {
+                path.push(m);
+                [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                currentEmpty = m;
+            }
+            fixedIndices.delete(posUp);
+            
+            // Step 2c: Rotate in
+            moves = solveSubGoal(currentGrid, size, currentEmpty, [
+                {val: valUp, pos: posUp},
+                {val: valDown, pos: posDown}
+            ], fixedIndices);
+            
+            if (!moves) return null;
+            for (let m of moves) {
+                path.push(m);
+                [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                currentEmpty = m;
+            }
+
+            return path;
+        }
+
+
+        // --- Stratified Solver (Generic for N*N) ---
+        function findSolutionStratified(grid, size, emptyIdx) {
+            let currentGrid = [...grid];
+            let currentEmpty = emptyIdx;
+            let fullPath = [];
+            let fixedIndices = new Set(); // Walls
+
+            const applyMoves = (moves) => {
+                for (let moveIdx of moves) {
+                    [currentGrid[currentEmpty], currentGrid[moveIdx]] = [currentGrid[moveIdx], currentGrid[currentEmpty]];
+                    currentEmpty = moveIdx;
+                    fullPath.push(moveIdx);
+                }
+            };
+
+            // Phase 1: Solve Row by Row until 2 rows remain
+            for (let r = 0; r < size - 2; r++) {
+                const moves = solveRow(currentGrid, size, currentEmpty, r, fixedIndices);
+                if (!moves) return null;
+                applyMoves(moves);
+                
+                // Freeze this entire row
+                for (let c = 0; c < size; c++) fixedIndices.add(r * size + c);
+            }
+
+            // Phase 2: Solve Columns in the last 2 rows
+            for (let c = 0; c < size - 2; c++) {
+                const moves = solveColumnInLastRows(currentGrid, size, currentEmpty, c, fixedIndices);
+                if (!moves) return null;
+                applyMoves(moves);
+                // Freeze this column in the last two rows
+                fixedIndices.add((size - 2) * size + c);
+                fixedIndices.add((size - 1) * size + c);
+            }
+
+            // Phase 3: Solve the remaining 2x2 area using Global A*
+            const finalMoves = findSolutionGlobal(currentGrid, size, currentEmpty, fixedIndices);
+            if (!finalMoves) return null;
+            
+            fullPath.push(...finalMoves);
+            return fullPath;
+        }
+
+        // Optimized Last Rows Solver (Vertical Pairs)
+        function solveColumnInLastRows(grid, size, emptyIdx, colIdx, fixedIndices) {
+            let path = [];
+            let currentGrid = [...grid];
+            let currentEmpty = emptyIdx;
+
+            // Target Values
+            const valUp = (size - 2) * size + colIdx + 1; 
+            const valDown = (size - 1) * size + colIdx + 1; 
+
+            // Target Positions
+            const posUp = (size - 2) * size + colIdx; 
+            const posDown = (size - 1) * size + colIdx; 
+            
+            // Temporary Position for 'Down' tile
+            const posNextToDown = posDown + 1; 
+
+            // Strategy Step 1: Move valUp to posDown
+            let moves = solveSubGoal(currentGrid, size, currentEmpty, [{val: valUp, pos: posDown}], fixedIndices);
+            if (!moves) return null;
+            for (let m of moves) {
+                path.push(m);
+                [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                currentEmpty = m;
+            }
+            
+            // Lock posDown temporarily
+            fixedIndices.add(posDown);
+
+            // Strategy Step 2: Move valDown to posNextToDown
+            moves = solveSubGoal(currentGrid, size, currentEmpty, [{val: valDown, pos: posNextToDown}], fixedIndices);
+            if (!moves) return null;
+            for (let m of moves) {
+                path.push(m);
+                [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                currentEmpty = m;
+            }
+
+            // Unlock posDown
+            fixedIndices.delete(posDown);
+
+            // Strategy Step 3: Rotate them into final positions
+            moves = solveSubGoal(currentGrid, size, currentEmpty, [
+                {val: valUp, pos: posUp},
+                {val: valDown, pos: posDown}
+            ], fixedIndices);
+            
+            if (!moves) return null;
+            for (let m of moves) {
+                path.push(m);
+                [currentGrid[currentEmpty], currentGrid[m]] = [currentGrid[m], currentGrid[currentEmpty]];
+                currentEmpty = m;
+            }
+
+            return path;
+        }
+
+        // Updated solveRow Logic (Standard Row Solving)
+        function solveRow(grid, size, emptyIdx, rowIdx, fixedIndices) {
+            // Uses generic solver starting from column 0
+            return solveRowRange(grid, size, emptyIdx, rowIdx, 0, fixedIndices);
+        }
+
+        // Focused A* using MinHeap
+        function solveSubGoal(grid, size, emptyIdx, targets, fixedIndices) {
+            const getH = (g) => {
+                let h = 0;
+                for (let t of targets) {
+                    const idx = g.indexOf(t.val);
+                    if (idx === -1) continue; 
+                    const r = Math.floor(idx / size);
+                    const c = idx % size;
+                    const tr = Math.floor(t.pos / size);
+                    const tc = t.pos % size;
+                    h += Math.abs(r - tr) + Math.abs(c - tc);
+                }
+                return h;
+            };
+
+            const isGoal = (g) => {
+                for (let t of targets) {
+                    if (g[t.pos] !== t.val) return false;
+                }
+                return true;
+            };
+
+            const startNode = {
+                grid: [...grid],
+                empty: emptyIdx,
+                g: 0,
+                h: getH(grid),
+                parent: null,
+                move: null
+            };
+            
+            // High weight for greedy/fast search
+            const WEIGHT = 10; 
+            const openList = new MinHeap(); 
+            openList.push(Object.assign(startNode, { f: startNode.g + startNode.h * WEIGHT }));
+
+            const closedSet = new Set();
+            const MAX_ITER = 100000; 
+            let iter = 0;
+
+            while (openList.size() > 0) {
+                iter++;
+                if (iter > MAX_ITER) return null;
+
+                const current = openList.pop(); 
+
+                const stateStr = current.grid.join(','); 
+                
+                if (isGoal(current.grid)) {
+                    let path = [];
+                    let curr = current;
+                    while (curr.parent) {
+                        path.push(curr.move);
+                        curr = curr.parent;
+                    }
+                    return path.reverse();
+                }
+
+                if (closedSet.has(stateStr)) continue;
+                closedSet.add(stateStr);
+
+                const neighbors = getNeighbors(current.empty);
+                for (let nIdx of neighbors) {
+                    if (fixedIndices.has(nIdx)) continue; 
+
+                    const newGrid = [...current.grid];
+                    [newGrid[current.empty], newGrid[nIdx]] = [newGrid[nIdx], newGrid[current.empty]];
+                    
+                    const h = getH(newGrid);
+                    const g = current.g + 1;
+                    
+                    openList.push({
+                        grid: newGrid,
+                        empty: nIdx,
+                        g: g,
+                        h: h,
+                        f: g + h * WEIGHT,
+                        parent: current,
+                        move: nIdx
+                    });
+                }
+            }
+            return null;
+        }
+
+        // --- Global Solver using MinHeap (Kept for <= 4x4 and final cleanup) ---
+        function findSolutionGlobal(grid, size, emptyIdx, fixedIndices) {
+            const getManhattan = (g, sz) => {
+                let d = 0;
+                for (let i = 0; i < g.length; i++) {
+                    if (g[i] === null || fixedIndices.has(i)) continue; 
+                    const val = g[i] - 1; 
+                    const targetR = Math.floor(val / sz);
+                    const targetC = val % sz;
+                    const currR = Math.floor(i / sz);
+                    const currC = i % sz;
+                    d += Math.abs(currR - targetR) + Math.abs(currC - targetC);
+                }
+                return d;
+            };
+            
+            const WEIGHT = 5;
+            const goalStr = Array.from({length: size*size}, (_, i) => i + 1).map(x => x === size*size ? null : x).join(',');
+
+            let startNode = {
+                grid: [...grid],
+                empty: emptyIdx,
+                g: 0,
+                h: getManhattan(grid, size),
+                parent: null,
+                move: null
+            };
+
+            const openList = new MinHeap(); 
+            openList.push(Object.assign(startNode, { f: startNode.g + startNode.h * WEIGHT }));
+
+            const closedSet = new Set();
+            const MAX_ITER = 100000;
+            let iter = 0;
+
+            while (openList.size() > 0) {
+                iter++;
+                if (iter > MAX_ITER) return null;
+
+                const current = openList.pop();
+
+                if (current.grid.join(',') === goalStr) {
+                    let path = [];
+                    let curr = current;
+                    while (curr.parent) {
+                        path.push(curr.move);
+                        curr = curr.parent;
+                    }
+                    return path.reverse();
+                }
+
+                closedSet.add(current.grid.join(','));
+
+                const neighbors = getNeighbors(current.empty);
+                for (let nIdx of neighbors) {
+                    if (fixedIndices.has(nIdx)) continue; 
+
+                    const newGrid = [...current.grid];
+                    [newGrid[current.empty], newGrid[nIdx]] = [newGrid[nIdx], newGrid[current.empty]];
+                    
+                    if (closedSet.has(newGrid.join(','))) continue;
+
+                    openList.push({
+                        grid: newGrid,
+                        empty: nIdx,
+                        g: current.g + 1,
+                        h: getManhattan(newGrid, size),
+                        parent: current,
+                        move: nIdx,
+                        f: current.g + 1 + getManhattan(newGrid, size) * WEIGHT
+                    });
+                }
+            }
+            return null;
+        }
+
+        function animateSolution(moves) {
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i >= moves.length || !state.isPlaying) {
+                    clearInterval(interval);
+                    state.isAiSolving = false;
+                    document.body.style.cursor = 'default';
+                    // Re-enable Slider
+                    sliderEl.disabled = false;
+                    sliderEl.parentElement.classList.remove('opacity-50', 'pointer-events-none');
+                    return;
+                }
+                
+                handleTileInteraction(moves[i]);
+                i++;
+            }, 100); 
+        }
+
+        // --- Event Listeners ---
         sliderEl.addEventListener('input', (e) => {
             state.size = parseInt(e.target.value);
             sizeDisplayEl.textContent = `${state.size} x ${state.size}`;
@@ -744,6 +1269,12 @@
             state.showHint = !state.showHint;
             updateButtonStates();
             for (let id in state.tiles) { updateTileVisual(id); }
+        });
+
+        // AI Trigger
+        aiTrigger.addEventListener('click', (e) => {
+            e.preventDefault(); 
+            solveGame();
         });
 
         initGame();
